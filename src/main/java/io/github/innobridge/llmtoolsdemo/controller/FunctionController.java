@@ -4,6 +4,7 @@ import static io.github.innobridge.llmtools.constants.OllamaConstants.FUNCTION;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,10 +18,8 @@ import io.github.innobridge.llmtools.models.Message;
 import io.github.innobridge.llmtools.models.request.ChatRequest;
 import io.github.innobridge.llmtools.models.request.Tool;
 import io.github.innobridge.llmtools.models.request.ToolFunction;
-import io.github.innobridge.llmtools.models.response.ChatResponse;
 import io.github.innobridge.llmtools.models.response.ModelAndSize;
 import io.github.innobridge.llmtools.models.response.SortOrder;
-import io.github.innobridge.llmtools.models.response.ToolCall;
 import io.github.innobridge.llmtoolsdemo.function.WeatherService;
 import io.github.innobridge.llmtoolsdemo.tools.FunctionConverter;
 import io.github.innobridge.llmtoolsdemo.tools.Tools;
@@ -89,7 +88,7 @@ public class FunctionController {
     }
 
     @GetMapping("/functioncall")
-    public ChatResponse functionCall(@RequestParam String model, @RequestParam String prompt) {
+    public String functionCall(@RequestParam String model, @RequestParam String prompt) {
 
         var builder = ChatRequest.builder();
         builder.model(model);
@@ -110,11 +109,64 @@ public class FunctionController {
             toolFunction
         );
         builder.tools(List.of(tool));
-        return ollamaTools.functionCall(builder.build(), List.of(tool));        
+        var result = ollamaTools.functionCall(builder.build(), List.of(tool));        
+        return result.toString();
     }
 
     @GetMapping("/convertToToolFunction")
     public ToolFunction convertToToolFunction() {
         return FunctionConverter.convertToToolFunction(WeatherService.class);
+    }
+
+    @GetMapping("/execute/weatherservice/first")
+    public Optional<?> executeWeatherServiceFirst(@RequestParam String model, @RequestParam String prompt) {
+
+        var builder = ChatRequest.builder();
+        builder.model(model);
+        builder.messages(
+            List.of(
+                Message.builder()
+                    .role("user")
+                    .content(prompt) 
+                    .build()
+            )
+        );
+        builder.stream(false);
+
+        ToolFunction toolFunction = FunctionConverter.convertToToolFunction(WeatherService.class);
+
+        Tool tool = new Tool(
+            FUNCTION,
+            toolFunction
+        );
+        builder.tools(List.of(tool));
+        var result = ollamaTools.functionCall(builder.build(), List.of(tool));        
+        return result.executeFirst(WeatherService.class);
+    }
+
+    @GetMapping("/execute/weatherservice/last")
+    public Optional<?> executeWeatherServiceLast(@RequestParam String model, @RequestParam String prompt) {
+
+        var builder = ChatRequest.builder();
+        builder.model(model);
+        builder.messages(
+            List.of(
+                Message.builder()
+                    .role("user")
+                    .content(prompt) 
+                    .build()
+            )
+        );
+        builder.stream(false);
+
+        ToolFunction toolFunction = FunctionConverter.convertToToolFunction(WeatherService.class);
+
+        Tool tool = new Tool(
+            FUNCTION,
+            toolFunction
+        );
+        builder.tools(List.of(tool));
+        var result = ollamaTools.functionCall(builder.build(), List.of(tool));        
+        return result.executeFirst(WeatherService.class);
     }
 }

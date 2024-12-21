@@ -13,7 +13,6 @@ import static io.github.innobridge.llmtools.constants.OllamaConstants.IS;
 import static io.github.innobridge.llmtools.constants.OllamaConstants.LAMBDA;
 import static io.github.innobridge.llmtools.constants.OllamaConstants.NUMBER;
 import static io.github.innobridge.llmtools.constants.OllamaConstants.OBJECT;
-import static io.github.innobridge.llmtools.constants.OllamaConstants.STREAM;
 import static io.github.innobridge.llmtools.constants.OllamaConstants.STRING;
 import static io.github.innobridge.llmtools.constants.OllamaConstants.TO_STRING;
 

@@ -4,7 +4,6 @@ import java.util.List;
 
 import io.github.innobridge.llmtools.models.request.ChatRequest;
 import io.github.innobridge.llmtools.models.request.Tool;
-import io.github.innobridge.llmtools.models.response.ChatResponse;
 import io.github.innobridge.llmtools.models.response.ModelAndSize;
 import io.github.innobridge.llmtools.models.response.SortOrder;
 
@@ -15,5 +14,5 @@ public interface Tools {
 
     List<ModelAndSize> getToolSupportingModelResponses(SortOrder sortOrder);
 
-    ChatResponse functionCall(ChatRequest chatRequest, List<Tool> tools);
+    FunctionsExecutor functionCall(ChatRequest chatRequest, List<Tool> tools);
 }

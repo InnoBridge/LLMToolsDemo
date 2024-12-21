@@ -11,10 +11,11 @@ import io.github.innobridge.llmtools.models.response.ListResponse;
 import io.github.innobridge.llmtools.models.response.ModelAndSize;
 import io.github.innobridge.llmtools.models.response.ModelResponse;
 import io.github.innobridge.llmtools.models.response.SortOrder;
+import io.github.innobridge.llmtools.models.response.ToolCall;
+import io.github.innobridge.llmtoolsdemo.function.LLMFunction;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.Comparator;
 import java.util.HashMap;
 
@@ -35,9 +36,9 @@ import java.util.stream.Stream;
 public class OllamaTools implements Tools {
         
         private final OllamaClient ollamaClient;
-        private final Map<String, Function> functionRepository = new HashMap<>();
+        private final Map<String, LLMFunction> functionRepository = new HashMap<>();
 
-        public OllamaTools(OllamaClient ollamaClient, List<Function> functions) {
+        public OllamaTools(OllamaClient ollamaClient, List<LLMFunction> functions) {
             this.ollamaClient = ollamaClient;
             functions.forEach(function -> functionRepository.put(getAnnotatedName(function.getClass()), function));
         }
@@ -76,12 +77,18 @@ public class OllamaTools implements Tools {
         }
 
         @Override
-        public ChatResponse functionCall(ChatRequest chatRequest, List<Tool> tools) {
+        public FunctionsExecutor functionCall(ChatRequest chatRequest, List<Tool> tools) {
             if (!isToolsSupported(chatRequest.getModel())) {
                 throw new IllegalArgumentException("Model " + chatRequest.getModel() + " does not support function calls");
             }
             chatRequest.setTools(tools);
-            return ollamaClient.chat(chatRequest).block();
+            List<ToolCall> toolCalls = ollamaClient.chat(chatRequest).block().getMessage().getToolCalls();
+            
+            return new FunctionsExecutor(
+                toolCalls == null ? new ArrayList<>() : toolCalls.stream()
+                    .map(toolCall -> toolCall.getFunction())
+                    .collect(Collectors.toList())    
+            , this.functionRepository);
         }
 
         private String formatSize(long bytes) {

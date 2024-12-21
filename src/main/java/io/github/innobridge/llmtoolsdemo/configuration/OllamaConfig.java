@@ -34,12 +34,19 @@ public class OllamaConfig {
     }
 
     @Bean
-    public WeatherService weatherService() {
-        return new WeatherService();
+    public WeatherService weatherService(
+        @Value("${weather.api.baseurl}") String baseUrl,
+        @Value("${weather.api.key}") String apiKey
+    ) {
+        WebClient weatherClient = WebClient.builder()
+                .baseUrl(baseUrl)
+                .build();
+        return new WeatherService(weatherClient, apiKey);
     }
 
     @Bean
     public Tools ollamaTools(OllamaClient ollamaClient, WeatherService weatherService) {
         return new OllamaTools(ollamaClient, List.of(weatherService));
     }
+
 }
