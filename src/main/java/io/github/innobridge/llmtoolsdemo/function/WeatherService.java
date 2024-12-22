@@ -19,7 +19,7 @@ import io.github.innobridge.llmtoolsdemo.tools.FunctionDefinition;
     name = "get_current_weather",
     description = "Get the current weather in a given location"
 )
-public class WeatherService implements LLMFunction<WeatherService.Request, String> {
+public class WeatherService implements LLMFunction<WeatherService.Request, WeatherService.Response> {
     
     private final WebClient weatherClient;
     private final String apiKey;
@@ -50,14 +50,14 @@ public class WeatherService implements LLMFunction<WeatherService.Request, Strin
     }
 
     @Override
-    public String apply(Map<String, Object> arguments) {
+    public Response apply(Map<String, Object> arguments) {
         return apply(fromArguments(arguments));
     }
 
     @Override
-    public String apply(Request request) {
+    public Response apply(Request request) {
         if (request.location() == null || request.location().trim().isEmpty()) {
-            return "Error: Location parameter is required";
+            throw new LLMFunctionException("Location is required");
         }
 
         try {
@@ -68,31 +68,22 @@ public class WeatherService implements LLMFunction<WeatherService.Request, Strin
                     .build()
                     .toUriString();
 
-            WeatherResponse response = weatherClient.post()
+            Response response = weatherClient.post()
                     .uri(uri)
                     .header("Content-Type", "application/json")
                     .bodyValue("")  // Empty body for POST request
                     .retrieve()
-                    .bodyToMono(WeatherResponse.class)
+                    .bodyToMono(Response.class)
                     .block();
 
-            double temp = request.format() == Format.CELSIUS ? 
-                    response.current().temp_c() : 
-                    response.current().temp_f();
-            String unit = request.format() == Format.CELSIUS ? "°C" : "°F";
-            
-            return String.format("Current weather in %s: %.1f%s, %s", 
-                request.location(),
-                temp,
-                unit,
-                response.current().condition().text());
+            return response;
         } catch (Exception e) {
             e.printStackTrace();
-            return "Error fetching weather data: " + e.getMessage();
+            throw new LLMFunctionException("Failed to get weather", e);
         }
     }
 
-    public enum Format {
+    enum Format {
         CELSIUS("celsius"), 
         FAHRENHEIT("fahrenheit");
 
@@ -109,7 +100,7 @@ public class WeatherService implements LLMFunction<WeatherService.Request, Strin
     }
 
     @JsonInclude(Include.NON_NULL)
-    public record Request(
+    record Request(
         @JsonProperty(required = true) 
         @JsonPropertyDescription("The city and state e.g. San Francisco, CA") 
         String location,
@@ -118,17 +109,41 @@ public class WeatherService implements LLMFunction<WeatherService.Request, Strin
         Format format) {
     }
     
-    private record WeatherResponse(
+    record Response(
+        Location location,
         Current current
     ) {
-        private record Current(
+        record Current(
             double temp_c,
-            double temp_f,
+            // double temp_f,
+            // @JsonProperty("wind_mph")
+            // double windMph,
+            // @JsonProperty("wind_kph")
+            // double windKph,
+            // @JsonProperty("precip_mm")
+            // double precipMm,
+            @JsonProperty("precip_in")
+            double precipIn,
+            // int humidity,
+            // int cloud,
+            // double uv,
             Condition condition
         ) {}
-
-        private record Condition(
+    
+        record Condition(
             String text
         ) {}
+
+        record Location(
+            String name,
+            // String region,
+            String country
+            // double lat,
+            // double lon,
+            // @JsonProperty("tz_id")
+            // String tzId,
+            // String localtime
+        ) {}
     }
+    
 }

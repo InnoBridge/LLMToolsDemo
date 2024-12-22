@@ -20,6 +20,7 @@ import io.github.innobridge.llmtools.models.request.Tool;
 import io.github.innobridge.llmtools.models.request.ToolFunction;
 import io.github.innobridge.llmtools.models.response.ModelAndSize;
 import io.github.innobridge.llmtools.models.response.SortOrder;
+import io.github.innobridge.llmtoolsdemo.function.BraveSearchService;
 import io.github.innobridge.llmtoolsdemo.function.WeatherService;
 import io.github.innobridge.llmtoolsdemo.tools.FunctionConverter;
 import io.github.innobridge.llmtoolsdemo.tools.Tools;
@@ -167,6 +168,75 @@ public class FunctionController {
         );
         builder.tools(List.of(tool));
         var result = ollamaTools.functionCall(builder.build(), List.of(tool));        
-        return result.executeFirst(WeatherService.class);
+        return result.executeLast(WeatherService.class);
+    }
+
+    @GetMapping("/execute/weatherservice/all")
+    public List<Optional<?>> executeWeatherServiceAll(@RequestParam String model, @RequestParam String prompt) {
+
+        var builder = ChatRequest.builder();
+        builder.model(model);
+        builder.messages(
+            List.of(
+                Message.builder()
+                    .role("user")
+                    .content(prompt) 
+                    .build()
+            )
+        );
+        builder.stream(false);
+
+        ToolFunction toolFunction = FunctionConverter.convertToToolFunction(WeatherService.class);
+
+        Tool tool = new Tool(
+            FUNCTION,
+            toolFunction
+        );
+        builder.tools(List.of(tool));
+        var result = ollamaTools.functionCall(builder.build(), List.of(tool));        
+        return result.executeAll(WeatherService.class);
+    }
+
+    @GetMapping("/execute/bravesearch/all")
+    public List<Optional<?>> executeBraveSearch(@RequestParam String model, @RequestParam String prompt) {
+        var builder = ChatRequest.builder();
+        builder.model(model);
+        builder.messages(
+            List.of(
+                Message.builder()
+                    .role("user")
+                    .content(prompt) 
+                    .build()
+            )
+        );
+        builder.stream(false);
+
+        ToolFunction toolFunction = FunctionConverter.convertToToolFunction(BraveSearchService.class);
+        Tool tool = new Tool(FUNCTION, toolFunction);
+        builder.tools(List.of(tool));
+        
+        var result = ollamaTools.functionCall(builder.build(), List.of(tool));        
+        return result.executeAll(BraveSearchService.class);
+    }
+
+    @GetMapping("/execute/all")
+    public List<Optional<?>> executeAll(@RequestParam String model, @RequestParam String prompt) {
+        var builder = ChatRequest.builder();
+        builder.model(model);
+        builder.messages(
+            List.of(
+                Message.builder()
+                    .role("user")
+                    .content(prompt) 
+                    .build()
+            )
+        );
+        builder.stream(false);
+        
+        var result = ollamaTools.functionCall(builder.build(), List.of(
+            new Tool(FUNCTION, FunctionConverter.convertToToolFunction(WeatherService.class)),
+            new Tool(FUNCTION, FunctionConverter.convertToToolFunction(BraveSearchService.class))
+        ));
+        return result.executeAll();
     }
 }

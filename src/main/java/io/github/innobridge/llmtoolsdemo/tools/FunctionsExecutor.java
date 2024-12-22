@@ -1,10 +1,9 @@
 package io.github.innobridge.llmtoolsdemo.tools;
 
-import java.nio.channels.Pipe.SourceChannel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.github.innobridge.llmtools.exceptions.LLMFunctionException;
@@ -24,13 +23,11 @@ public class FunctionsExecutor {
 
     public Optional<?> executeFirst(Class clazz) {
         Optional<List<ToolCallFunction>> toolCallFunctions = getToolCallFunctions(clazz);
-        if (toolCallFunctions.isEmpty()) {
-            return Optional.empty();
-        }
         List<ToolCallFunction> filteredCalls = toolCallFunctions.get();
-        if (filteredCalls.isEmpty()) {
+        if (filteredCalls.isEmpty() || toolCallFunctions.isEmpty()) {
             return Optional.empty();
-        }
+        } 
+
         ToolCallFunction firstCall = filteredCalls.getFirst();
 
         LLMFunction<?, ?> function = functionRepository.get(FunctionConverter.getAnnotatedName(clazz));
@@ -44,6 +41,67 @@ public class FunctionsExecutor {
             e.printStackTrace();
             return Optional.empty();
         }
+    }
+
+    public Optional<?> executeLast(Class clazz) {
+        Optional<List<ToolCallFunction>> toolCallFunctions = getToolCallFunctions(clazz);
+        List<ToolCallFunction> filteredCalls = toolCallFunctions.get();
+        if (filteredCalls.isEmpty() || toolCallFunctions.isEmpty()) {
+            return Optional.empty();
+        } 
+        
+        ToolCallFunction firstCall = filteredCalls.getLast();
+
+        LLMFunction<?, ?> function = functionRepository.get(FunctionConverter.getAnnotatedName(clazz));
+
+        try {
+            return Optional.of(function.apply(firstCall.getArguments()));
+        } catch (LLMFunctionException e) {
+            // Log the specific error if needed
+            return Optional.empty();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }
+
+    public List<Optional<?>> executeAll(Class clazz) {
+        Optional<List<ToolCallFunction>> toolCallFunctions = getToolCallFunctions(clazz);
+        List<ToolCallFunction> filteredCalls = toolCallFunctions.get();
+        if (filteredCalls.isEmpty() || toolCallFunctions.isEmpty()) {
+            return new ArrayList<>();
+        } 
+        
+        LLMFunction<?, ?> function = functionRepository.get(FunctionConverter.getAnnotatedName(clazz));
+
+        return filteredCalls.stream()
+            .map(call -> {
+                try {
+                    return Optional.of(function.apply(call.getArguments()));
+                } catch (LLMFunctionException e) {
+                    return Optional.empty();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return Optional.empty();
+                }
+            })
+            .collect(Collectors.toList());
+    }
+
+    public List<Optional<?>> executeAll() {
+        return functionCalls.stream()
+            .filter(call -> functionRepository.containsKey(call.getName()))
+            .map(call -> {
+                try {
+                    return Optional.of(functionRepository.get(call.getName()).apply(call.getArguments()));
+                } catch (LLMFunctionException e) {
+                    return Optional.empty();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return Optional.empty();
+                }
+            })
+            .collect(Collectors.toList());
     }
 
     private Optional<List<ToolCallFunction>> getToolCallFunctions(Class clazz) {
