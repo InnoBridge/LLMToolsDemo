@@ -104,6 +104,17 @@ public class FunctionsExecutor {
             .collect(Collectors.toList());
     }
 
+    public Boolean invokesFunction(Class clazz) {
+        return functionCalls.stream()
+            .filter(call -> call.getName().equals(FunctionConverter.getAnnotatedName(clazz)))
+            .findFirst()
+            .isPresent();
+    }
+
+    public List<ToolCallFunction> getFunctionCalls() {
+        return functionCalls;
+    }
+
     private Optional<List<ToolCallFunction>> getToolCallFunctions(Class clazz) {
         String name = FunctionConverter.getAnnotatedName(clazz);
         if (functionCalls == null 
