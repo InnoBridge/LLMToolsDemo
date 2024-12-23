@@ -9,11 +9,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import io.github.innobridge.llmtools.client.OllamaClient;
 import io.github.innobridge.llmtools.client.OllamaClientImpl;
+import io.github.innobridge.llmtools.controller.FunctionController;
 import io.github.innobridge.llmtools.controller.OllamaController;
-import io.github.innobridge.llmtoolsdemo.function.BraveSearchService;
-import io.github.innobridge.llmtoolsdemo.function.WeatherService;
-import io.github.innobridge.llmtoolsdemo.tools.OllamaTools;
-import io.github.innobridge.llmtoolsdemo.tools.Tools;
+import io.github.innobridge.llmtools.function.BraveSearchService;
+import io.github.innobridge.llmtools.function.WeatherService;
+import io.github.innobridge.llmtools.tools.OllamaTools;
+import io.github.innobridge.llmtools.tools.Tools;
 
 @Configuration
 public class OllamaConfig {
@@ -32,6 +33,13 @@ public class OllamaConfig {
     @Bean
     public OllamaController ollamaController(OllamaClient ollamaClient) {
         return new OllamaController(ollamaClient);
+    }
+
+    @Bean
+    public FunctionController functionController(
+        OllamaClient ollamaClient,    
+        Tools ollamaTools) {
+        return new FunctionController(ollamaClient, ollamaTools);
     }
 
     @Bean
