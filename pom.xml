@@ -38,7 +38,7 @@
 		<dependency>
 			<groupId>io.github.innobridge</groupId>
 			<artifactId>llmtools</artifactId>
-			<version>0.0.3-SNAPSHOT</version>
+			<version>0.0.4</version>
 		</dependency>
 	</dependencies>
 
